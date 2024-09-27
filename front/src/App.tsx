@@ -1,41 +1,34 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
+import useWebSocket from 'react-use-websocket';
 import './App.css';
+
+const socketUrl = 'ws://localhost:3000';
 
 function App() {
 	const [message, setMessage] = useState('');
 	const [arrMessages, setArrMessages] = useState<string[]>([]);
 
-	const socket = new WebSocket('ws://localhost:3000');
-
-	useEffect(() => {
-		socket.onopen = (e) => {
-			console.log(e);
-			console.log('Connected');
-		};
-
-		socket.onclose = (e) => {
-			console.log(e);
-			console.log('Disconnected');
-		};
-	}, []);
-
-	useEffect(() => {
-		socket.onmessage = (e) => {
+	const { sendMessage } = useWebSocket(socketUrl, {
+		onOpen: () => console.log('opened'),
+		onMessage: (e) => {
 			const payload = JSON.parse(e.data);
+			console.log(payload);
 			setArrMessages([...arrMessages, payload.data]);
-		};
-	}, [socket]);
+		},
+		//Will attempt to reconnect on all close events, such as server shutting down
+		// shouldReconnect: (closeEvent) => true,
+	});
 
-	const sendMessage = (e: FormEvent) => {
+	const send = (e: FormEvent) => {
 		e.preventDefault();
-		socket.send(message);
+		sendMessage(message);
 		setMessage('');
 	};
 
 	return (
 		<>
 			<h1>Websockets</h1>
-			<form onSubmit={sendMessage}>
+			<form onSubmit={send}>
 				<input type='text' placeholder='Send message' value={message} onChange={(e) => setMessage(e.target.value)} />
 				<button type='submit'>Send</button>
 			</form>
